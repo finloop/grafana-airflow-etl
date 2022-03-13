@@ -12,7 +12,7 @@ from airflow.decorators import dag, task
     catchup=False,
     tags=["piotrek"],
 )
-def sellers_geolocations_dag():
+def seller_order_items_dag():
     sellers = S3toJSONOperator(
         filename="olist_sellers_dataset.csv",
         task_id="extract_olist_sellers_dataset",
@@ -41,4 +41,4 @@ def sellers_geolocations_dag():
     orders >> transformed
 
 
-my_dag = sellers_geolocations_dag()
+my_dag = seller_order_items_dag()
