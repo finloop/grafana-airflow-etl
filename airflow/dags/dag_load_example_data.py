@@ -1,7 +1,7 @@
 import json
 
 import pendulum
-from operators.s3_operator import S3toStringOperator
+from operators.s3_operator import S3toJSONOperator
 
 from airflow.decorators import dag, task
 
@@ -12,18 +12,33 @@ from airflow.decorators import dag, task
     catchup=False,
     tags=["piotrek"],
 )
-def my_taskflow_api_etl():
-    extract = S3toStringOperator(
-        filename="olist_customers_dataset.csv",
-        task_id="extract_olist_customers_dataset",
+def sellers_geolocations_dag():
+    sellers = S3toJSONOperator(
+        filename="olist_sellers_dataset.csv",
+        task_id="extract_olist_sellers_dataset",
+    )
+
+    orders = S3toJSONOperator(
+        filename="olist_order_items_dataset.csv",
+        task_id="extract_olist_order_items_dataset",
     )
 
     @task()
-    def log_df(data):
-        print(data)
+    def transform(f_sellers, f_orders):
+        import pandas as pd
 
-    log_df(extract.output["data"])
+        df_sellers = pd.read_json(f_sellers["data"])
+        df_orders = pd.read_json(f_orders["data"])
+        df = df_orders.merge(df_sellers, left_on="seller_id", right_on="seller_id", how="inner")
+
+        return {"data": df.to_json()}
+    
+
+    
+    transformed = transform(f_sellers=sellers.output, f_orders=orders.output)
+
+    sellers >> transformed
+    orders >> transformed
 
 
-
-my_dag = my_taskflow_api_etl()
+my_dag = sellers_geolocations_dag()
