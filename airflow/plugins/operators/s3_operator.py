@@ -1,9 +1,4 @@
-import io
-import boto3
-import pandas as pd
 from airflow.models.baseoperator import BaseOperator
-
-
 class S3toJSONOperator(BaseOperator):
     def __init__(
         self,
@@ -23,6 +18,9 @@ class S3toJSONOperator(BaseOperator):
         self.filename = filename
 
     def execute(self, context):
+        import io
+        import boto3
+        import pandas as pd
         s3 = boto3.client(
             "s3",
             endpoint_url=self.endpoint_url,
