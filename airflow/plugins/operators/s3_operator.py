@@ -29,4 +29,4 @@ class S3toJSONOperator(BaseOperator):
         )
         obj = s3.get_object(Bucket=self.bucket, Key=self.filename)
         data = pd.read_csv(io.BytesIO(obj["Body"].read()))
-        return {"data": data.to_json()}
+        return data.to_json()
