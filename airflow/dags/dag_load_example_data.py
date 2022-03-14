@@ -1,9 +1,8 @@
-import json
-
 import pendulum
-from operators.s3_operator import S3toJSONOperator
-
 from airflow.decorators import dag, task
+
+from operators.s3_operator import S3toJSONOperator
+from operators.postgres import JSONtoPostgresOverrideOperator
 
 
 @dag(
@@ -29,16 +28,22 @@ def seller_order_items_dag():
 
         df_sellers = pd.read_json(f_sellers["data"])
         df_orders = pd.read_json(f_orders["data"])
-        df = df_orders.merge(df_sellers, left_on="seller_id", right_on="seller_id", how="inner")
-
-        return {"data": df.to_json()}
-    
-
+        df = df_orders.merge(
+            df_sellers, left_on="seller_id", right_on="seller_id", how="inner"
+        )
+        return df.to_json()
     
     transformed = transform(f_sellers=sellers.output, f_orders=orders.output)
 
+    load = JSONtoPostgresOverrideOperator(
+        task_id="upload_to_postgres",
+        table_name="sellers_orders",
+        data=transformed,
+    )
+
     sellers >> transformed
     orders >> transformed
+    transformed >> load
 
 
 my_dag = seller_order_items_dag()
