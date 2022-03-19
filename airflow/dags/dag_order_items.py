@@ -1,8 +1,8 @@
 import pendulum
 from airflow.decorators import dag, task
 
-from operators.s3_operator import S3toJSONOperator
-from operators.postgres import JSONtoPostgresOverrideOperator
+from operators.s3_operator import S3toDataFrame
+from operators.postgres import DataFrametoPostgresOverrideOperator
 
 
 @dag(
@@ -12,30 +12,28 @@ from operators.postgres import JSONtoPostgresOverrideOperator
     tags=["piotrek"],
 )
 def seller_order_items_dag():
-    sellers = S3toJSONOperator(
+    sellers = S3toDataFrame(
         filename="olist_sellers_dataset.csv",
         task_id="extract_olist_sellers_dataset",
     )
 
-    orders = S3toJSONOperator(
+    orders = S3toDataFrame(
         filename="olist_order_items_dataset.csv",
         task_id="extract_olist_order_items_dataset",
     )
 
     @task()
-    def transform(f_sellers, f_orders):
+    def transform(df_sellers, df_orders):
         import pandas as pd
 
-        df_sellers = pd.read_json(f_sellers)
-        df_orders = pd.read_json(f_orders)
         df = df_orders.merge(
             df_sellers, left_on="seller_id", right_on="seller_id", how="inner"
         )
-        return df.to_json()
+        return df
     
-    transformed = transform(f_sellers=sellers.output, f_orders=orders.output)
+    transformed = transform(df_sellers=sellers.output, df_orders=orders.output)
 
-    load = JSONtoPostgresOverrideOperator(
+    load = DataFrametoPostgresOverrideOperator(
         task_id="upload_to_postgres",
         table_name="sellers_orders",
         data=transformed,
