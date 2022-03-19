@@ -1,5 +1,5 @@
 from airflow.models.baseoperator import BaseOperator
-class S3toJSONOperator(BaseOperator):
+class S3toDataFrame(BaseOperator):
     def __init__(
         self,
         filename: str,
@@ -10,7 +10,7 @@ class S3toJSONOperator(BaseOperator):
         *args,
         **kwargs
     ):
-        super(S3toJSONOperator, self).__init__(*args, **kwargs)
+        super(S3toDataFrame, self).__init__(*args, **kwargs)
         self.endpoint_url = endpoint_url
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
@@ -29,4 +29,4 @@ class S3toJSONOperator(BaseOperator):
         )
         obj = s3.get_object(Bucket=self.bucket, Key=self.filename)
         data = pd.read_csv(io.BytesIO(obj["Body"].read()))
-        return data.to_json()
+        return data
