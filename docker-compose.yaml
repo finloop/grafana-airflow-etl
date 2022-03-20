@@ -36,8 +36,8 @@ services:
     image: minio/minio
     command: server /data --console-address ":9001"
     ports:
-      - 9000:9000 # Web server
-      - 9001:9001 # Console
+      - 5054:9000 # Console
+      - 5051:9001 # Web server
     volumes:
       - minio-volume:/data
     environment:
@@ -52,7 +52,7 @@ services:
       - ./grafana/data:/var/lib/grafana
     user: 1000:1000
     ports:
-      - 3000:3000
+      - 5050:3000
 
   warehouse-postgres:
     image: postgres:14
@@ -61,7 +61,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
     ports:
-      - 5052:5432
+      - 5055:5432
     volumes:
       - postgres-warehouse-volume:/var/lib/postgresql/data
     healthcheck:
