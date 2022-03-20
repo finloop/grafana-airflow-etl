@@ -52,7 +52,18 @@ def customers_dag():
 
         return customers
 
-    merge_orders_customers_result = merge_orders_customers(customers=customers.output, orders=orders.output)
+    @task
+    def fix_dates(orders):
+        import pandas as pd
+        orders.order_purchase_timestamp = pd.to_datetime(orders.order_purchase_timestamp)
+        orders.order_approved_at = pd.to_datetime(orders.order_purchase_timestamp)
+        orders.order_delivered_carrier_date = pd.to_datetime(orders.order_delivered_customer_date)
+        orders.order_estimated_delivery_date = pd.to_datetime(orders.order_estimated_delivery_date)
+        orders.order_delivered_customer_date = pd.to_datetime(orders.order_delivered_customer_date)
+        return orders
+
+    fix_dates_res = fix_dates(orders=orders.output)
+    merge_orders_customers_result = merge_orders_customers(customers=customers.output, orders=fix_dates_res)
     orders_num_per_customer_result = orders_num_per_customer(df_orders_customers=merge_orders_customers_result)
     group_by_order_count_result = group_by_order_count(df_orders_num_per_customer=orders_num_per_customer_result)
     add_returing_column_result = add_returing_column(customers=merge_orders_customers_result, orders_num_per_customer=orders_num_per_customer_result)
