@@ -41,14 +41,18 @@ def customers_dag():
     def group_by_order_count(df_orders_num_per_customer):
         import pandas as pd
 
+        def fix(x):
+            return x[1]
+
         customers_with_order_count = pd.DataFrame(df_orders_num_per_customer.value_counts())
         customers_with_order_count.columns = ["number_of_customers"]
+        customers_with_order_count.index =  customers_with_order_count.index.map(str).map(fix) + " zamówienie"
         return customers_with_order_count
 
     @task
     def add_returing_column(customers, orders_num_per_customer):
         import pandas as pd
-        customers["returing"] = customers.customer_unique_id.map(orders_num_per_customer.iloc[:, 0]> 1)
+        customers["returing"] = customers.customer_unique_id.map(orders_num_per_customer.iloc[:, 0]> 1).astype('int32')
 
         return customers
 
@@ -72,6 +76,12 @@ def customers_dag():
         task_id="upload_to_postgres_group_by_order_count_result",
         table_name="group_by_order_count_result",
         data=group_by_order_count_result,
+    )
+
+    DataFrametoPostgresOverrideOperator(
+        task_id="upload_to_postgres_orders_num_per_customer_result",
+        table_name="orders_num_per_customer",
+        data=orders_num_per_customer_result, 
     )
 
     DataFrametoPostgresOverrideOperator(
